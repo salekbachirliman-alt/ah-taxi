@@ -1,0 +1,11 @@
+{
+  "name": "SH Taxi",
+  "short_name": "SH Taxi",
+  "description": "Solicita un taxi de forma sencilla",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#111111",
+  "icons": []
+}
