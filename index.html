@@ -109,8 +109,10 @@ async function startDriverNavigation(){
   sheet.style.removeProperty("height");sheet.style.removeProperty("max-height");sheet.style.removeProperty("overflow");sheet.style.removeProperty("overflow-y");
   $("sheetHandle").setAttribute("aria-expanded","false");
   const startBtn=document.querySelector("[data-start-route]");if(startBtn){startBtn.textContent="Ruta activa";startBtn.disabled=true;}
+  sheet.style.setProperty("height","calc(112px + env(safe-area-inset-bottom))","important");sheet.style.setProperty("max-height","calc(112px + env(safe-area-inset-bottom))","important");sheet.style.setProperty("overflow","hidden","important");
+  document.querySelectorAll("#dHome > .card, #dHome > #dRequestsArea, #dHome > #dHistoryArea, #dHome > #dUserArea").forEach(el=>el.style.setProperty("display","none","important"));
   requestAnimationFrame(()=>{sheet.classList.add("compact");map.invalidateSize()});
-  say("Navegación activa. El panel inferior se ha recogido.","success");
+  say("NAVEGACIÓN ACTIVA · PANEL RECOGIDO","success");
  }catch(e){say("Permite la ubicación GPS precisa para iniciar la ruta.","error")}
 }
 function stopDriverTracking(){if(trackingWatchId!==null&&navigator.geolocation)navigator.geolocation.clearWatch(trackingWatchId);trackingWatchId=null;activePickup=null;routeSteps=[];routeStepIndex=0;if(activeRoute){map.removeLayer(activeRoute);activeRoute=null}if(carMarker){map.removeLayer(carMarker);carMarker=null}startPassiveLocationTracking()}
