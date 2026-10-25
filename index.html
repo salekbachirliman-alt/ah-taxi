@@ -76,7 +76,7 @@ async function loadDrivers(){driverMarkers.forEach(m=>map.removeLayer(m));driver
  const sheet=document.querySelector(".sheet"),handle=document.getElementById("sheetHandle");
  if(!sheet||!handle)return;
  let startY=0,startHeight=0,dragging=false,changed=false;
- const minHeight=()=>112+(parseFloat(getComputedStyle(document.documentElement).getPropertyValue("env(safe-area-inset-bottom")))||0);
+ const minHeight=()=>112;
  const maxHeight=()=>Math.min(window.innerHeight*.88,window.innerHeight-24);
  function begin(y,e){
   const r=sheet.getBoundingClientRect();
