@@ -71,29 +71,47 @@ $("pLogout").onclick=signOut;$("dLogout").onclick=signOut;
 function showAuth(){user=null;profile=null;$("modeSwitch").classList.remove("hidden");["pAuth","dAuth","pAuthTabs","dAuthTabs"].forEach(id=>$(id).classList.remove("hidden"));["pHome","dHome"].forEach(id=>$(id).classList.add("hidden"));setMode(mode||"passenger")}
 async function refreshHome(){const {data:pr,error}=await db.from("profiles").select("id,username,phone,role").eq("id",user.id).maybeSingle();if(error)throw error;if(!pr){showAuth();say("Tu perfil todavía no está listo. Si acabas de registrarte, confirma tu número y vuelve a entrar.","error");return}profile=pr;const isP=pr.role==="passenger";$("modeSwitch").classList.add("hidden");$("pAuth").classList.add("hidden");$("dAuth").classList.add("hidden");$("pAuthTabs").classList.add("hidden");$("dAuthTabs").classList.add("hidden");$("pHome").classList.toggle("hidden",!isP);$("dHome").classList.toggle("hidden",isP);if(isP){$("pProfileUsername").textContent="Usuario: "+(pr.username||"—");$("pProfilePhone").textContent="Teléfono: "+(pr.phone||"—");setPassengerPanel("collapsed");await loadDrivers();await loadPassengerHistory()}else{$("dProfileUsername").textContent="Usuario: "+(pr.username||"—");$("dProfilePhone").textContent="Teléfono: "+(pr.phone||"—");setDriverPanel("collapsed");setMode("driver");await loadDriverPresence();$("dProfileAvailability").textContent="Disponibilidad: "+(driverAvailable?"Activa":"Desactivada");await loadRequests();await loadDriverHistory()}}
 async function loadDrivers(){driverMarkers.forEach(m=>map.removeLayer(m));driverMarkers=[];try{const {data,error}=await db.from("driver_presence").select("driver_id,latitude,longitude,vehicle_model,last_seen_at,profiles:profiles!driver_presence_driver_id_fkey(username)").eq("is_available",true).not("latitude","is",null).not("longitude","is",null).gte("last_seen_at",new Date(Date.now()-150000).toISOString());if(error)throw error;(data||[]).forEach(d=>{if(!Number.isFinite(d.latitude)||!Number.isFinite(d.longitude))return;const pr=Array.isArray(d.profiles)?d.profiles[0]:d.profiles;const taxiIcon=L.divIcon({className:"",html:"<div class=\"taxi-pin\"><span>🚕</span></div>",iconSize:[38,38],iconAnchor:[19,34]});const m=L.marker([d.latitude,d.longitude],{icon:taxiIcon}).addTo(map).bindPopup("<b>"+esc(pr?.username||"Taxista disponible")+"</b><br>Disponible · "+esc(d.vehicle_model||"Vehículo local"));driverMarkers.push(m)});if(!data?.length)$("mapNote").textContent="No hay taxistas disponibles ahora";else $("mapNote").textContent=data.length+" taxista(s) disponible(s)"}catch(e){console.warn("driver markers",e);$("mapNote").textContent="Mapa interactivo · mueve y amplía"}}
-/* Panel inferior AH Taxi: arrastrar la barra para expandir o reducir, compatible con Safari iOS. */
+/* Panel inferior AH Taxi: arrastre real con un dedo, con ajuste al soltar. */
 (function(){
  const sheet=document.querySelector(".sheet"),handle=document.getElementById("sheetHandle");
  if(!sheet||!handle)return;
- let startY=null,lastY=null,moved=false;
- function apply(delta){
-  if(Math.abs(delta)<24)return false;
-  const compact=delta>0;
+ let startY=0,startHeight=0,dragging=false,changed=false;
+ const minHeight=()=>112+(parseFloat(getComputedStyle(document.documentElement).getPropertyValue("env(safe-area-inset-bottom")))||0);
+ const maxHeight=()=>Math.min(window.innerHeight*.88,window.innerHeight-24);
+ function begin(y,e){
+  const r=sheet.getBoundingClientRect();
+  startY=y;startHeight=r.height;dragging=true;changed=false;
+  sheet.style.transition="none";sheet.style.overflow="hidden";
+  if(e&&e.pointerId!==undefined){try{handle.setPointerCapture(e.pointerId)}catch(_){}}
+ }
+ function move(y,e){
+  if(!dragging)return;
+  const delta=startY-y;
+  if(Math.abs(delta)>3)changed=true;
+  const h=Math.max(minHeight(),Math.min(maxHeight(),startHeight+delta));
+  sheet.style.height=h+"px";
+  if(e&&e.cancelable)e.preventDefault();
+ }
+ function end(y){
+  if(!dragging)return;
+  move(y);
+  const h=sheet.getBoundingClientRect().height;
+  const compact=h<Math.min(210,window.innerHeight*.34);
+  dragging=false;
+  sheet.style.transition="";
+  sheet.style.overflow="";
   sheet.classList.toggle("compact",compact);
   handle.setAttribute("aria-expanded",String(!compact));
+  sheet.style.height="";
   if(!compact)setTimeout(()=>{if(window.map&&typeof map.invalidateSize==="function")map.invalidateSize()},280);
-  return true;
  }
  handle.style.touchAction="none";
- handle.addEventListener("pointerdown",e=>{startY=lastY=e.clientY;moved=false;try{handle.setPointerCapture(e.pointerId)}catch(_){}});
- handle.addEventListener("pointermove",e=>{if(startY!==null){lastY=e.clientY;if(Math.abs(lastY-startY)>8)moved=true}});
- handle.addEventListener("pointerup",e=>{if(startY===null)return;const delta=e.clientY-startY;const didMove=moved;startY=lastY=null;moved=false;if(didMove)apply(delta);else sheet.classList.toggle("compact")});
- handle.addEventListener("pointercancel",()=>{startY=lastY=null;moved=false});
- let touchY=null,touchLast=null,touchMoved=false;
- handle.addEventListener("touchstart",e=>{if(!e.touches.length)return;touchY=touchLast=e.touches[0].clientY;touchMoved=false},{passive:true});
- handle.addEventListener("touchmove",e=>{if(touchY===null||!e.touches.length)return;touchLast=e.touches[0].clientY;if(Math.abs(touchLast-touchY)>8)touchMoved=true;if(e.cancelable)e.preventDefault()},{passive:false});
- handle.addEventListener("touchend",()=>{if(touchY===null)return;const delta=touchLast-touchY;const didMove=touchMoved;touchY=touchLast=null;touchMoved=false;if(didMove)apply(delta);else sheet.classList.toggle("compact")},{passive:true});
- handle.addEventListener("keydown",e=>{if(e.key==="ArrowDown"){e.preventDefault();sheet.classList.add("compact")}else if(e.key==="ArrowUp"){e.preventDefault();sheet.classList.remove("compact")}else if(e.key==="Enter"||e.key===" "){e.preventDefault();sheet.classList.toggle("compact")}});
+ handle.addEventListener("pointerdown",e=>{if(e.pointerType==="mouse"&&e.button!==0)return;begin(e.clientY,e)});
+ handle.addEventListener("pointermove",e=>move(e.clientY,e));
+ handle.addEventListener("pointerup",e=>{if(!dragging)return;const did=changed;end(e.clientY);if(!did)sheet.classList.toggle("compact");handle.setAttribute("aria-expanded",String(!sheet.classList.contains("compact")))});
+ handle.addEventListener("pointercancel",()=>{if(dragging)end(startY)});
+ handle.addEventListener("keydown",e=>{if(e.key==="ArrowDown"){e.preventDefault();sheet.classList.add("compact")}else if(e.key==="ArrowUp"){e.preventDefault();sheet.classList.remove("compact")}else if(e.key==="Enter"||e.key===" "){e.preventDefault();sheet.classList.toggle("compact")}handle.setAttribute("aria-expanded",String(!sheet.classList.contains("compact")))});
+ window.addEventListener("resize",()=>{if(!dragging)sheet.style.height=""});
 })();
 function setPassengerPanel(tab){const compact=tab==="collapsed";$("pRequestArea").classList.toggle("hidden",tab!=="request");$("pHistoryArea").classList.toggle("hidden",tab!=="history");$("pUserArea").classList.toggle("hidden",tab!=="user");$("pRequestTab").classList.toggle("active",tab==="request");$("pHistoryTab").classList.toggle("active",tab==="history");$("pUserTab").classList.toggle("active",tab==="user");document.querySelector(".sheet").classList.toggle("compact",compact);if(tab!=="collapsed"){setTimeout(()=>map.invalidateSize(),280)}}$("pRequestTab").onclick=()=>setPassengerPanel("request");$("pHistoryTab").onclick=async()=>{setPassengerPanel("history");await loadPassengerHistory()};$("pUserTab").onclick=()=>setPassengerPanel("user");
 async function loadPassengerHistory(){if(!user||profile?.role!=="passenger")return;const box=$("historyList");try{const {data,error}=await db.from("ride_requests").select("id,pickup_label,destination_label,status,created_at").eq("passenger_id",user.id).order("created_at",{ascending:false}).limit(20);if(error)throw error;box.innerHTML=data?.length?data.map(r=>'<div class="card"><div class="row"><strong>'+esc(r.pickup_label||"Recogida")+' → '+esc(r.destination_label||"Destino")+'</strong><span class="pill">'+esc(r.status)+'</span></div><p class="hint">'+new Date(r.created_at).toLocaleString("es-ES")+'</p></div>').join(""):'<div class="empty">Todavía no tienes viajes. Tus solicitudes aparecerán aquí.</div>'}catch(e){box.innerHTML='<div class="empty">No se pudo cargar el historial. Comprueba los permisos de acceso.</div>'}}
