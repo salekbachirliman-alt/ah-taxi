@@ -1,78 +1,78 @@
 <!doctype html>
 <html lang="es">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#111111"><meta name="description" content="SH Taxi: solicita transporte de forma sencilla.">
-<link rel="manifest" href="./manifest.json"><link rel="icon" href="data:,">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#ffffff">
+<meta name="description" content="SH Taxi — movilidad local, sencilla y clara.">
+<link rel="manifest" href="./manifest.json">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <title>SH Taxi</title>
 <style>
-:root{--black:#111;--white:#fff;--red:#d82936;--green:#18834b;--muted:#6c7075;--line:#e6e7e9}
-*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#e8edef;color:var(--black);font:16px/1.45 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}button,input,textarea{font:inherit}button{cursor:pointer;border:0;border-radius:14px;padding:14px 16px;font-weight:750}button:disabled{opacity:.45;cursor:not-allowed}.app{position:relative;width:100%;height:100dvh;min-height:100dvh;max-width:none;margin:0;background:transparent;padding:0;overflow:hidden}header{position:absolute;z-index:900;top:calc(env(safe-area-inset-top) + 10px);left:16px;right:16px;display:flex;align-items:center;justify-content:space-between;padding:0;pointer-events:none}.brand,header .pill,header button{pointer-events:auto;box-shadow:0 3px 18px #00000016}.brand{font-size:23px;font-weight:950;letter-spacing:-1px;background:white;padding:10px 14px;border-radius:15px}.brand span{color:var(--red)}.pill{font-size:12px;background:#fff;color:var(--green);padding:9px 12px;border-radius:99px;font-weight:800}.hero{display:none}.tabs{position:absolute;z-index:910;top:calc(env(safe-area-inset-top) + 70px);left:16px;right:16px;display:flex;gap:8px;margin:0}.tab{flex:1;background:#ffffffed;color:#222;box-shadow:0 3px 18px #00000012;padding:11px 14px}.tab.active{background:var(--black);color:white}.panel{background:#fff;border:1px solid #e7e9eb;border-radius:20px;padding:16px;margin-bottom:12px;box-shadow:0 4px 22px #0000000a}.panel h2{font-size:18px;margin:0 0 12px}.field{display:block;margin:11px 0}.field span{display:block;font-size:13px;font-weight:750;margin-bottom:6px}.field input,.field textarea{width:100%;border:1px solid #d9dbde;border-radius:12px;padding:13px;background:#fff;outline-color:var(--green)}.field textarea{min-height:70px;resize:vertical}.primary{background:var(--red);color:#fff;width:100%}.dark{background:var(--black);color:#fff;width:100%}.green{background:var(--green);color:white}.secondary{background:#eef0f1;color:#111}.note{font-size:12px;color:var(--muted)}#map{position:absolute;inset:0;width:100%;height:100%;z-index:1;background:#e4e9eb;overflow:hidden;border-radius:0}.driver{padding:12px 0;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:10px;align-items:center}.driver:last-child{border-bottom:0}.driver strong{display:block}.status{font-size:12px;color:var(--green);font-weight:800}.hidden{display:none!important}.msg{font-size:13px;margin:10px 0;padding:10px;border-radius:10px;background:#f3f4f5;white-space:pre-wrap}.msg.error{background:#fff0f0;color:#9b1c26}.msg.ok{background:#edf8f0;color:#126638}.section-title{display:flex;justify-content:space-between;align-items:center;margin:14px 0 10px}.footer{display:none}#passengerPanel,#driverPanel{position:absolute;z-index:800;left:0;right:0;bottom:0;max-height:58dvh;overflow:auto;overscroll-behavior:contain;background:#fff;border-radius:24px 24px 0 0;padding:12px 16px calc(env(safe-area-inset-bottom) + 16px);box-shadow:0 -8px 32px #00000018}#passengerPanel>*:not(.panel-placeholder){display:none!important}.panel-placeholder{min-height:78px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;color:#111}.panel-placeholder strong{font-size:18px;font-weight:900}.panel-placeholder span{font-size:13px;color:#6c7075}#passengerPanel:before,#driverPanel:before{content:"";display:block;width:42px;height:5px;border-radius:9px;background:#d8dadd;margin:0 auto 12px}#passengerPanel .panel,#driverPanel .panel{box-shadow:none;border:0;padding:0;margin-bottom:12px}#passengerPanel #map{display:none}#passengerPanel .section-title{margin-top:14px}#passengerPanel #driversList{padding:0}#notice{position:absolute;z-index:1200;top:calc(env(safe-area-inset-top) + 122px);left:16px;right:16px;box-shadow:0 4px 20px #0002}#rideStatus{background:#f8f9fa}#driverPanel .panel{padding:4px 0}#driverPanel #driverAuth{padding:12px 0}#driverPanel #driverWorkspace{padding-bottom:8px}@media(min-width:700px){#passengerPanel,#driverPanel{left:auto;right:16px;bottom:16px;width:410px;max-height:calc(100dvh - 170px);border-radius:24px;padding:16px 20px;bottom:16px}#passengerPanel:before,#driverPanel:before{margin-bottom:16px}#notice{left:auto;right:442px;max-width:360px;top:calc(env(safe-area-inset-top) + 20px)}}
-</style></head>
-<body><main class="app">
-<header><div class="brand">SH <span>TAXI</span></div><div class="pill">Viajes sencillos</div></header>
-<section class="hero"><h1>Tu viaje.<br>Sin complicaciones.</h1><p>Pide un taxi o entra en tu espacio de conductor.</p></section>
-<div class="tabs"><button class="tab active" id="passengerTab">Pedir taxi</button><button class="tab" id="driverTab">Soy taxista</button></div>
-<div id="notice" class="msg hidden" role="status"></div>
-<div id="map" aria-label="Mapa interactivo de SH Taxi"></div>
-<section id="passengerPanel">
-<div class="panel-placeholder"><strong>SH Taxi</strong><span>Panel inferior · contenido por definir</span></div>
-<div class="panel"><h2>¿A dónde vamos?</h2>
-<label class="field"><span>Tu nombre</span><input id="pName" autocomplete="name" placeholder="Nombre"></label>
-<label class="field"><span>Teléfono de contacto</span><input id="pPhone" inputmode="tel" autocomplete="tel" placeholder="Tu número de teléfono"></label>
-<label class="field"><span>Punto de recogida</span><input id="pickup" placeholder="Usa el botón de ubicación o escribe la dirección"></label>
-<button class="secondary" id="locate" style="width:100%;margin-bottom:10px">Usar mi ubicación</button>
-<label class="field"><span>Destino</span><input id="destination" placeholder="Dirección o lugar de destino"></label>
-<label class="field"><span>Detalles (opcional)</span><textarea id="notes" placeholder="Equipaje, número de pasajeros…"></textarea></label>
-<button class="primary" id="requestRide">Solicitar taxi</button>
-<p class="note">No necesitas crear una cuenta. Comparte solo los datos necesarios para que el taxista pueda contactarte.</p>
-</div>
-<div class="section-title"><h2 style="margin:0">Taxistas disponibles</h2><button class="secondary" id="refreshDrivers" style="padding:8px 12px">Actualizar</button></div>
-<div id="driversList" class="panel" style="margin-top:12px"><p class="note">Cargando taxistas disponibles…</p></div>
-<div id="rideStatus" class="panel hidden"></div>
+:root{color-scheme:light;--ink:#141414;--muted:#70757a;--red:#d92d3a;--green:#16834b;--surface:#fff;--shadow:0 8px 30px #17212b20}
+*{box-sizing:border-box}html,body{height:100%;width:100%;margin:0;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--ink);background:#e8edef}
+button{font:inherit;cursor:pointer;border:0}#map{position:fixed;inset:0;z-index:1;background:#e8edef}.leaflet-control-attribution{font-size:9px!important}
+.topbar{position:fixed;z-index:500;top:calc(env(safe-area-inset-top) + 14px);left:16px;right:16px;display:flex;align-items:center;justify-content:space-between;pointer-events:none}.brand,.mode-switch,.locate{pointer-events:auto;box-shadow:var(--shadow);background:var(--surface)}
+.brand{display:flex;align-items:center;gap:8px;padding:11px 14px;border-radius:16px;font-size:20px;font-weight:950;letter-spacing:-.8px}.brand-mark{width:9px;height:25px;background:var(--red);border-radius:6px;display:inline-block}.brand span:last-child{color:var(--red)}
+.mode-switch{display:flex;padding:4px;border-radius:14px;gap:3px}.mode-switch button{padding:10px 12px;border-radius:10px;background:transparent;font-size:12px;font-weight:800;color:#555}.mode-switch button[aria-pressed="true"]{background:var(--ink);color:white}
+.locate{position:fixed;z-index:500;right:16px;bottom:calc(176px + env(safe-area-inset-bottom));width:48px;height:48px;border-radius:16px;display:grid;place-items:center;font-size:22px}
+.sheet{position:fixed;z-index:600;left:0;right:0;bottom:0;min-height:126px;padding:10px 20px calc(env(safe-area-inset-bottom) + 16px);background:#fff;border-radius:26px 26px 0 0;box-shadow:0 -8px 34px #11111118}.handle{width:42px;height:5px;border-radius:8px;background:#d9dcdf;margin:0 auto 17px}.sheet-head{display:flex;align-items:center;justify-content:space-between;gap:16px}.sheet-title{font-size:18px;font-weight:850;letter-spacing:-.3px}.sheet-caption{font-size:12px;color:var(--muted);margin-top:4px}.online-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--green);margin-right:7px}.status{font-size:11px;font-weight:800;color:var(--green);white-space:nowrap}.toast{position:fixed;z-index:1000;left:16px;right:16px;top:calc(env(safe-area-inset-top) + 78px);padding:13px 15px;border-radius:14px;background:#171717;color:white;box-shadow:var(--shadow);font-size:13px}.toast[hidden]{display:none}
+@media(min-width:720px){.topbar{left:24px;right:24px;top:24px}.sheet{left:auto;right:20px;bottom:20px;width:390px;border-radius:26px;padding:12px 22px 24px}.locate{right:430px;bottom:40px}.toast{left:auto;right:430px;top:24px;max-width:360px}}
+</style>
+</head>
+<body>
+<div id="map" role="application" aria-label="Mapa interactivo de SH Taxi"></div>
+<header class="topbar">
+  <div class="brand" aria-label="SH Taxi"><i class="brand-mark"></i><span>SH</span><span>TAXI</span></div>
+  <nav class="mode-switch" aria-label="Tipo de acceso">
+    <button id="passengerMode" aria-pressed="true">Pasajero</button>
+    <button id="driverMode" aria-pressed="false">Conductor</button>
+  </nav>
+</header>
+<button class="locate" id="locateMe" aria-label="Centrar mapa en mi ubicación" title="Mi ubicación">◎</button>
+<div class="toast" id="toast" role="status" hidden></div>
+<section class="sheet" aria-label="Panel principal">
+  <div class="handle"></div>
+  <div class="sheet-head">
+    <div><div class="sheet-title" id="sheetTitle">¿A dónde vamos?</div><div class="sheet-caption" id="sheetCaption">Tu ciudad, tus viajes, más fácil.</div></div>
+    <div class="status"><i class="online-dot"></i>SH TAXI</div>
+  </div>
 </section>
-<section id="driverPanel" class="hidden">
-<div class="panel" id="driverAuth"><h2>Acceso de taxista</h2><p class="note">Este acceso es privado. Para crear una cuenta necesitas un correo y una contraseña.</p>
-<label class="field"><span>Correo electrónico</span><input id="dEmail" type="email" autocomplete="email" placeholder="taxista@correo.com"></label>
-<label class="field"><span>Contraseña</span><input id="dPassword" type="password" autocomplete="current-password" placeholder="Mínimo 8 caracteres"></label>
-<div style="display:flex;gap:8px"><button class="dark" id="driverLogin" style="flex:1">Iniciar sesión</button><button class="secondary" id="driverSignup" style="flex:1">Crear cuenta</button></div>
-</div>
-<div id="driverWorkspace" class="hidden">
-<div class="panel"><div class="section-title" style="margin-top:0"><h2>Mi disponibilidad</h2><button class="secondary" id="driverLogout" style="padding:8px 12px">Salir</button></div>
-<label class="field"><span>Nombre visible</span><input id="dName" placeholder="Nombre del taxista"></label><label class="field"><span>Teléfono de contacto</span><input id="dPhone" inputmode="tel" placeholder="Teléfono"></label><label class="field"><span>Vehículo (opcional)</span><input id="dVehicle" placeholder="Modelo del vehículo"></label>
-<button class="green" id="driverLocation" style="width:100%">Actualizar mi ubicación</button><button class="dark" id="availabilityToggle" style="width:100%;margin-top:8px">Activar disponibilidad</button><p class="note">Mantén la aplicación abierta para actualizar tu ubicación y aparecer en el mapa.</p></div>
-<div class="panel"><div class="section-title" style="margin-top:0"><h2>Solicitudes de viaje</h2><button class="secondary" id="refreshRides" style="padding:8px 12px">Actualizar</button></div><div id="requestsList"><p class="note">Inicia sesión para consultar solicitudes.</p></div></div>
-</div></section>
-<div class="footer">SH Taxi · Servicio independiente · La disponibilidad puede variar.</div>
-</main>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-const SUPABASE_URL="https://jnqgnjwnqovvguommmjp.supabase.co";
-const SUPABASE_KEY="sb_publishable_uxEe33StrtXaFOhFDXXyxA_tSLHKVpo";
-const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
-const $=id=>document.getElementById(id);let pickupCoords=null,driverCoords=null,currentUser=null,available=false,map=null,markers=[],myRideId=null;
-function notice(message,type=""){const n=$("notice");n.textContent=message;n.className="msg "+type;n.classList.remove("hidden")}
-function clearNotice(){$("notice").classList.add("hidden")}
-function showTab(tab){const passenger=tab==="passenger";$("passengerPanel").classList.toggle("hidden",!passenger);$("driverPanel").classList.toggle("hidden",passenger);$("passengerTab").classList.toggle("active",passenger);$("driverTab").classList.toggle("active",!passenger);clearNotice()}
-$("passengerTab").onclick=()=>showTab("passenger");$("driverTab").onclick=()=>showTab("driver");
-function initMap(){if(map||!window.L)return;map=L.map("map",{zoomControl:false}).setView([38.477,-0.791],10);L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{attribution:"© OpenStreetMap contributors",maxZoom:19}).addTo(map);L.control.zoom({position:"bottomright"}).addTo(map);setTimeout(()=>map.invalidateSize(),250)}
-function escapeHtml(s){return String(s||"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
-function getPosition(){return new Promise((resolve,reject)=>{if(!navigator.geolocation)return reject(new Error("Este navegador no permite ubicación."));navigator.geolocation.getCurrentPosition(p=>resolve({latitude:p.coords.latitude,longitude:p.coords.longitude}),reject,{enableHighAccuracy:true,timeout:15000,maximumAge:10000})})}
-$("locate").onclick=async()=>{try{const p=await getPosition();pickupCoords={latitude:p.latitude,longitude:p.longitude};$("pickup").value="Mi ubicación actual";initMap();map.setView([p.latitude,p.longitude],14);L.circleMarker([p.latitude,p.longitude],{radius:8,color:"#d82936"}).addTo(map).bindPopup("Punto de recogida");notice("Ubicación obtenida.","ok")}catch(e){notice("No se pudo obtener la ubicación. Revisa los permisos del navegador o escribe tu dirección.","error")}};
-async function loadDrivers(){initMap();$("driversList").innerHTML='<p class="note">Buscando taxistas disponibles…</p>';try{const {data,error}=await db.from("driver_presence").select("driver_id,latitude,longitude,vehicle_model,last_seen_at,profiles:profiles!driver_presence_driver_id_fkey(username,phone,role)").eq("is_available",true).not("latitude","is",null).not("longitude","is",null).gte("last_seen_at",new Date(Date.now()-120000).toISOString());if(error)throw error;markers.forEach(m=>map.removeLayer(m));markers=[];if(!data||!data.length){$("driversList").innerHTML='<p class="note">Ahora mismo no aparecen taxistas disponibles. Prueba a actualizar más tarde.</p>';return}const list=$("driversList");list.innerHTML="";data.forEach(d=>{const profile=Array.isArray(d.profiles)?d.profiles[0]:d.profiles;const name=profile?.username||"Taxista SH";const phone=profile?.phone||"";if(d.latitude!=null&&d.longitude!=null){const m=L.marker([d.latitude,d.longitude]).addTo(map).bindPopup('<strong>'+escapeHtml(name)+'</strong><br>Taxista disponible');m.on("click",()=>{if(map.getZoom()<14)map.setView([d.latitude,d.longitude],14)});markers.push(m)}const row=document.createElement("div");row.className="driver";row.innerHTML='<div><strong>'+escapeHtml(name)+'</strong><span class="status">Disponible</span><div class="note">'+escapeHtml(d.vehicle_model||"Vehículo no indicado")+'</div></div>'+(phone?'<a href="tel:'+encodeURIComponent(phone)+'" style="color:#18834b;font-weight:800">Llamar</a>':'<span class="note">Sin teléfono público</span>');list.appendChild(row)});if(markers.length&& !currentUser)map.fitBounds(L.featureGroup(markers).getBounds().pad(.2),{maxZoom:13})}catch(e){$("driversList").innerHTML='<p class="note">No se pudo cargar el mapa de taxistas. Comprueba que la base de datos y sus permisos estén configurados.</p>';console.error(e)}}
-$("refreshDrivers").onclick=loadDrivers;
-$("requestRide").onclick=async()=>{clearNotice();const name=$("pName").value.trim(),phone=$("pPhone").value.trim(),pickup=$("pickup").value.trim(),destination=$("destination").value.trim();if(!name||!phone||!pickup||!destination){notice("Completa tu nombre, teléfono, recogida y destino.","error");return}if(!/^\+?[0-9 ()-]{7,20}$/.test(phone)){notice("Revisa el número de teléfono.","error");return}const id=crypto.randomUUID?crypto.randomUUID():null;if(!id){notice("Este navegador no admite crear la solicitud de forma segura. Actualiza el navegador e inténtalo de nuevo.","error");return}const payload={id,passenger_id:null,pickup_label:pickup,destination_label:destination,notes:$("notes").value.trim()||null,status:"open",pickup_latitude:pickupCoords?.latitude??null,pickup_longitude:pickupCoords?.longitude??null};const b=$("requestRide");b.disabled=true;try{const {error}=await db.from("ride_requests").insert(payload);if(error)throw error;const contact=await db.from("passenger_contacts").insert({request_id:id,passenger_name:name,passenger_phone:phone});if(contact.error)throw contact.error;myRideId=id;$("rideStatus").classList.remove("hidden");$("rideStatus").innerHTML='<h2>Solicitud enviada</h2><p>Tu solicitud se ha registrado. Puedes llamar directamente a un taxista disponible desde la lista.</p><p class="note">Código de solicitud: '+escapeHtml(id.slice(0,8).toUpperCase())+'</p>';notice("Solicitud enviada correctamente.","ok")}catch(e){console.error(e);notice("No se ha podido enviar la solicitud. Puede que falte ajustar un permiso de la base de datos. Inténtalo más tarde.","error")}finally{b.disabled=false}};
-async function refreshAuth(){const {data}=await db.auth.getSession();currentUser=data.session?.user||null;$("driverAuth").classList.toggle("hidden",!!currentUser);$("driverWorkspace").classList.toggle("hidden",!currentUser);if(currentUser){await loadDriverProfile();await loadRideRequests()}}
-async function driverAuth(mode){const email=$("dEmail").value.trim(),password=$("dPassword").value;if(!email||password.length<8){notice("Introduce un correo válido y una contraseña de al menos 8 caracteres.","error");return}let r;if(mode==="login")r=await db.auth.signInWithPassword({email,password});else r=await db.auth.signUp({email,password,options:{data:{role:"driver"}}});if(r.error){notice(r.error.message,"error");return}if(mode==="signup"&&!r.data.session){notice("Cuenta creada. Si el proyecto exige confirmar el correo, confirma la cuenta antes de iniciar sesión.","ok");return}currentUser=r.data.user;await refreshAuth();notice(mode==="login"?"Sesión iniciada.":"Cuenta creada.","ok")}
-$("driverLogin").onclick=()=>driverAuth("login");$("driverSignup").onclick=()=>driverAuth("signup");$("driverLogout").onclick=async()=>{await db.auth.signOut();currentUser=null;available=false;await refreshAuth();notice("Sesión cerrada.")};
-async function loadDriverProfile(){if(!currentUser)return;const {data}=await db.from("profiles").select("username,phone,role").eq("id",currentUser.id).maybeSingle();if(data){$("dName").value=data.username||"";$("dPhone").value=data.phone||""}const {data:p}=await db.from("driver_presence").select("is_available,latitude,longitude,vehicle_model").eq("driver_id",currentUser.id).maybeSingle();if(p){available=!!p.is_available;$("dVehicle").value=p.vehicle_model||"";$("availabilityToggle").textContent=available?"Desactivar disponibilidad":"Activar disponibilidad"}}
-async function saveDriver(){if(!currentUser)throw new Error("Inicia sesión como taxista.");const username=$("dName").value.trim(),phone=$("dPhone").value.trim(),vehicle_model=$("dVehicle").value.trim()||null;if(!username||!phone)throw new Error("Indica tu nombre y teléfono.");const a=await db.from("profiles").update({username,phone}).eq("id",currentUser.id);if(a.error)throw a.error;const b=await db.from("driver_presence").update({vehicle_model,updated_at:new Date().toISOString()}).eq("driver_id",currentUser.id);if(b.error)throw b.error}
-$("driverLocation").onclick=async()=>{try{if(!currentUser)throw new Error("Inicia sesión primero.");const p=await getPosition();driverCoords=p;await saveDriver();const r=await db.from("driver_presence").update({latitude:p.latitude,longitude:p.longitude,last_seen_at:new Date().toISOString(),updated_at:new Date().toISOString()}).eq("driver_id",currentUser.id);if(r.error)throw r.error;notice("Ubicación actualizada.","ok");await loadDrivers()}catch(e){notice(e.message||"No se pudo actualizar la ubicación.","error")}};
-$("availabilityToggle").onclick=async()=>{try{if(!currentUser)throw new Error("Inicia sesión primero.");if(!available&&!driverCoords){const p=await getPosition();driverCoords=p}await saveDriver();const r=await db.from("driver_presence").update({is_available:!available,latitude:driverCoords?.latitude??null,longitude:driverCoords?.longitude??null,last_seen_at:!available?new Date().toISOString():null,updated_at:new Date().toISOString()}).eq("driver_id",currentUser.id);if(r.error)throw r.error;available=!available;$("availabilityToggle").textContent=available?"Desactivar disponibilidad":"Activar disponibilidad";notice(available?"Ahora apareces como disponible.":"Has desactivado tu disponibilidad.","ok");await loadDrivers()}catch(e){notice(e.message||"No se pudo cambiar la disponibilidad.","error")}};
-async function loadRideRequests(){if(!currentUser)return;const box=$("requestsList");box.innerHTML='<p class="note">Cargando solicitudes…</p>';try{const {data,error}=await db.from("ride_requests").select("id,pickup_label,pickup_latitude,pickup_longitude,destination_label,notes,created_at,status").eq("status","open").order("created_at",{ascending:false}).limit(30);if(error)throw error;if(!data?.length){box.innerHTML='<p class="note">No hay solicitudes abiertas en este momento.</p>';return}box.innerHTML="";data.forEach(r=>{if(Number.isFinite(r.pickup_latitude)&&Number.isFinite(r.pickup_longitude)){const m=L.circleMarker([r.pickup_latitude,r.pickup_longitude],{radius:9,color:"#d82936",fillColor:"#d82936",fillOpacity:.95,weight:3}).addTo(map).bindPopup('<strong>Solicitud disponible</strong><br>'+escapeHtml(r.pickup_label||"Recogida no indicada")+' → '+escapeHtml(r.destination_label||"Destino no indicado"));m.on("click",()=>{map.setView([r.pickup_latitude,r.pickup_longitude],15);});markers.push(m)}const row=document.createElement("div");row.className="driver";row.style.display="block";row.innerHTML='<strong>'+escapeHtml(r.pickup_label||"Recogida no indicada")+' → '+escapeHtml(r.destination_label||"Destino no indicado")+'</strong><div class="note">Solicitud pendiente · '+escapeHtml(r.notes||"Sin detalles")+'</div><div style="display:flex;gap:8px;margin-top:10px"><button class="green" data-accept="'+r.id+'" style="flex:1">Aceptar viaje</button></div>';box.appendChild(row)});box.querySelectorAll("[data-accept]").forEach(b=>b.onclick=()=>acceptRide(b.dataset.accept,b))}catch(e){console.error(e);box.innerHTML='<p class="note">No se pudieron cargar las solicitudes. Revisa las políticas de acceso de taxistas.</p>'}}
-async function acceptRide(id,button){button.disabled=true;try{const {data:claimed,error}=await db.rpc("claim_ride_request",{p_request_id:id});if(error)throw error;if(!claimed)throw new Error("Otro taxista ya ha aceptado esta solicitud.");const c=await db.from("passenger_contacts").select("passenger_name,passenger_phone").eq("request_id",id).maybeSingle();if(c.error)throw c.error;notice(c.data?"Viaje aceptado. Pasajero: "+c.data.passenger_name+" · Teléfono: "+c.data.passenger_phone:"Viaje aceptado. No se encontró el contacto del pasajero.","ok");await loadRideRequests()}catch(e){notice("No se pudo aceptar: quizá otro taxista ya la aceptó o falta permiso.","error");await loadRideRequests()}finally{button.disabled=false}}
-$("refreshRides").onclick=loadRideRequests;
-window.addEventListener("load",async()=>{initMap();await loadDrivers();await refreshAuth();if("serviceWorker"in navigator)navigator.serviceWorker.register("./sw.js").catch(()=>{});setInterval(()=>{loadDrivers();if(currentUser&&available&&driverCoords){db.from("driver_presence").update({latitude:driverCoords.latitude,longitude:driverCoords.longitude,last_seen_at:new Date().toISOString(),updated_at:new Date().toISOString()}).eq("driver_id",currentUser.id).then(()=>{});}},45000);setInterval(()=>{if(currentUser)loadRideRequests()},30000);});
-</script></body></html>
+(()=> {
+  const map=L.map("map",{zoomControl:false,preferCanvas:true}).setView([38.477,-0.791],12);
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:"© OpenStreetMap contributors"}).addTo(map);
+  L.control.zoom({position:"bottomright"}).addTo(map);
+  let userMarker=null,accuracyCircle=null;
+  const toast=document.getElementById("toast");
+  function showToast(message){toast.textContent=message;toast.hidden=false;clearTimeout(showToast.timer);showToast.timer=setTimeout(()=>toast.hidden=true,3600)}
+  document.getElementById("locateMe").addEventListener("click",()=>{
+    if(!navigator.geolocation){showToast("Este navegador no permite acceder a la ubicación.");return}
+    showToast("Buscando tu ubicación…");
+    navigator.geolocation.getCurrentPosition(position=>{
+      const lat=position.coords.latitude,lon=position.coords.longitude;
+      map.flyTo([lat,lon],16,{duration:.7});
+      if(userMarker)map.removeLayer(userMarker);
+      if(accuracyCircle)map.removeLayer(accuracyCircle);
+      accuracyCircle=L.circle([lat,lon],{radius:Math.max(position.coords.accuracy||30,20),color:"#16834b",weight:1,fillColor:"#16834b",fillOpacity:.10}).addTo(map);
+      userMarker=L.circleMarker([lat,lon],{radius:8,color:"#fff",weight:3,fillColor:"#16834b",fillOpacity:1}).addTo(map).bindPopup("Tu ubicación");
+      showToast("Mapa centrado en tu ubicación.");
+    },()=>showToast("No se pudo obtener tu ubicación. Revisa los permisos de Safari."),{enableHighAccuracy:true,timeout:15000,maximumAge:10000});
+  });
+  function setMode(mode){
+    const passenger=mode==="passenger";
+    document.getElementById("passengerMode").setAttribute("aria-pressed",String(passenger));
+    document.getElementById("driverMode").setAttribute("aria-pressed",String(!passenger));
+    document.getElementById("sheetTitle").textContent=passenger?"¿A dónde vamos?":"Tu espacio de conductor";
+    document.getElementById("sheetCaption").textContent=passenger?"Tu ciudad, tus viajes, más fácil.":"Disponibilidad y solicitudes aparecerán aquí.";
+    showToast(passenger?"Vista de pasajero seleccionada.":"Vista de conductor seleccionada.");
+  }
+  document.getElementById("passengerMode").addEventListener("click",()=>setMode("passenger"));
+  document.getElementById("driverMode").addEventListener("click",()=>setMode("driver"));
+  window.addEventListener("resize",()=>map.invalidateSize());
+  if("serviceWorker" in navigator)window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js").catch(()=>{}));
+})();
+</script>
+</body>
+</html>
