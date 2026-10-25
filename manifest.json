@@ -2,10 +2,21 @@
   "name": "SH Taxi",
   "short_name": "SH Taxi",
   "description": "Solicita un taxi de forma sencilla",
-  "start_url": "./",
+  "start_url": "./?source=pwa",
   "scope": "./",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#111111",
-  "icons": []
+  "icons": [
+    {
+      "src": "./icons/sh-taxi.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "display_override": [
+    "standalone",
+    "minimal-ui"
+  ]
 }
