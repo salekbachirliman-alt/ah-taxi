@@ -103,7 +103,11 @@ async function startDriverNavigation(){
   await updateDriverRoute(start,true);
   if(navigator.geolocation){trackingWatchId=navigator.geolocation.watchPosition(p=>{const c={latitude:p.coords.latitude,longitude:p.coords.longitude,accuracy:p.coords.accuracy,heading:p.coords.heading,speed:p.coords.speed};updateDriverRoute(c,false)},e=>say("Se perdió la señal GPS. Comprueba los permisos de ubicación.","error"),{enableHighAccuracy:true,maximumAge:1500,timeout:20000})}
   $("mapNote").textContent="Navegación activa · sigue las indicaciones";
-  say("Ruta iniciada. El mapa seguirá la posición GPS del vehículo.","success");
+  // Recoger el panel al empezar la ruta para dejar el mapa despejado.
+  setDriverPanel("collapsed");
+  const sheet=document.querySelector(".sheet");sheet.style.height="";sheet.style.maxHeight="";sheet.style.overflowY="";
+  requestAnimationFrame(()=>map.invalidateSize());
+  say("Ruta iniciada. El panel se ha recogido y el mapa seguirá la posición GPS del vehículo.","success");
  }catch(e){say("Permite la ubicación GPS precisa para iniciar la ruta.","error")}
 }
 function stopDriverTracking(){if(trackingWatchId!==null&&navigator.geolocation)navigator.geolocation.clearWatch(trackingWatchId);trackingWatchId=null;activePickup=null;routeSteps=[];routeStepIndex=0;if(activeRoute){map.removeLayer(activeRoute);activeRoute=null}if(carMarker){map.removeLayer(carMarker);carMarker=null}startPassiveLocationTracking()}
