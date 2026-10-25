@@ -41,7 +41,7 @@
 const SUPABASE_URL="https://jnqgnjwnqovvguommmjp.supabase.co",SUPABASE_KEY="sb_publishable_uxEe33StrtXaFOhFDXXyxA_tSLHKVpo";
 const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 const $=id=>document.getElementById(id);
-const map=L.map("map",{zoomControl:false,preferCanvas:true}).setView([38.477,-0.791],14);
+const map=L.map("map",{zoomControl:false,preferCanvas:true,touchZoom:true,doubleClickZoom:true,scrollWheelZoom:true,dragging:true,zoomSnap:0.5,zoomDelta:0.5}).setView([38.477,-0.791],14);
 L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}",{maxZoom:16,attribution:"Tiles © Esri"}).addTo(map);L.control.zoom({position:"bottomright"}).addTo(map);
 let user=null,profile=null,mode="passenger",pSignup=false,dSignup=false,coords=null,driverAvailable=false,ownMarker=null,driverMarkers=[],requestMarkers=[],requestId=null,activeRoute=null,trackingWatchId=null,activePickup=null,routeSteps=[],routeStepIndex=0,lastRouteUpdate=0;
 const toast=$("toast");
@@ -70,9 +70,9 @@ async function updateDriverRoute(c,fit=false){
   const route=payload.routes[0];routeSteps=route.legs?.[0]?.steps||[];routeStepIndex=0;
   if(activeRoute)map.removeLayer(activeRoute);
   activeRoute=L.geoJSON(route.geometry,{style:{color:"#d92d35",weight:6,opacity:.95}}).addTo(map);
-  if(fit)map.fitBounds(activeRoute.getBounds(),{padding:[40,40],maxZoom:16});
+  if(fit)map.setView([c.latitude,c.longitude],16,{animate:false});
   showNextInstruction();
- }catch(e){$("mapNote").textContent="GPS activo · ruta de carretera no disponible";if(!activeRoute){activeRoute=L.polyline([[c.latitude,c.longitude],[activePickup.latitude,activePickup.longitude]],{color:"#d92d35",weight:5,dashArray:"8 8"}).addTo(map);if(fit)map.fitBounds(activeRoute.getBounds(),{padding:[40,40],maxZoom:16})}}
+ }catch(e){$("mapNote").textContent="GPS activo · ruta de carretera no disponible";if(!activeRoute){activeRoute=L.polyline([[c.latitude,c.longitude],[activePickup.latitude,activePickup.longitude]],{color:"#d92d35",weight:5,dashArray:"8 8"}).addTo(map);if(fit)map.setView([c.latitude,c.longitude],16,{animate:false})}}
 }
 async function showRouteToPickup(r){
  const lat=Number(r.pickup_latitude),lon=Number(r.pickup_longitude);
@@ -87,7 +87,7 @@ async function showRouteToPickup(r){
 }
 function stopDriverTracking(){if(trackingWatchId!==null&&navigator.geolocation)navigator.geolocation.clearWatch(trackingWatchId);trackingWatchId=null;activePickup=null;routeSteps=[];routeStepIndex=0;if(activeRoute){map.removeLayer(activeRoute);activeRoute=null}}
 function expandDriverPanel(){const sheet=document.querySelector(".sheet");sheet.classList.remove("compact");sheet.style.transition="none";sheet.style.height=Math.min(window.innerHeight*.82,window.innerHeight-24)+"px";sheet.style.maxHeight=Math.min(window.innerHeight*.88,window.innerHeight-24)+"px";sheet.style.overflowY="auto";$("sheetHandle").setAttribute("aria-expanded","true");requestAnimationFrame(()=>{sheet.style.transition="height .25s ease,max-height .25s ease";setTimeout(()=>{sheet.style.height="";sheet.style.maxHeight="";sheet.style.overflowY="auto";map.invalidateSize()},400)})}
-$("locateMe").onclick=async()=>{try{const c=await getPosition();placeOwnMarker(c);say("Mapa centrado en tu ubicación.","success")}catch(e){say("No se pudo obtener tu ubicación. Revisa los permisos de Safari.","error")}};
+$("locateMe").onclick=async()=>{try{const c=await getPosition();coords=c;if(ownMarker)ownMarker.setLatLng([c.latitude,c.longitude]);else placeOwnMarker(c);map.setView([c.latitude,c.longitude],Math.max(map.getZoom(),16),{animate:true});say("Mapa centrado en tu ubicación. El zoom queda bajo tu control.","success")}catch(e){say("No se pudo obtener tu ubicación. Revisa los permisos de Safari.","error")}};
 $("useLocation").onclick=async()=>{try{const c=await getPosition();placeOwnMarker(c);$("pickup").value="Mi ubicación actual";say("Punto de recogida actualizado.","success")}catch(e){say("No se pudo obtener tu ubicación. Puedes escribir la dirección.","error")}};
 function authTabs(role,signup){const isP=role==="passenger";if(isP)pSignup=signup;else dSignup=signup;$((isP?"pLoginTab":"dLoginTab")).classList.toggle("active",!signup);$((isP?"pSignupTab":"dSignupTab")).classList.toggle("active",signup);$(isP?"pSignupFields":"dSignupFields").classList.toggle("hidden",!signup);$(isP?"pLoginFields":"dLoginFields").classList.toggle("hidden",signup);$(isP?"pAuthTitle":"dAuthTitle").textContent=signup?"Crear cuenta nueva":(isP?"Bienvenido de nuevo":"Acceso de conductor");$(isP?"pAuthSubmit":"dAuthSubmit").textContent=signup?"Crear cuenta":"Iniciar sesión"}
 $("pLoginTab").onclick=()=>authTabs("passenger",false);$("pSignupTab").onclick=()=>authTabs("passenger",true);$("dLoginTab").onclick=()=>authTabs("driver",false);$("dSignupTab").onclick=()=>authTabs("driver",true);
