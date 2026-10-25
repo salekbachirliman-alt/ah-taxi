@@ -106,6 +106,17 @@ async function loadDrivers(){driverMarkers.forEach(m=>map.removeLayer(m));driver
   if(!compact)setTimeout(()=>{if(window.map&&typeof map.invalidateSize==="function")map.invalidateSize()},280);
  }
  handle.style.touchAction="none";
+ /* El conductor tiene una tarjeta de disponibilidad encima de la lista; admitir el gesto
+    también en la franja superior del panel, no solo en la pequeña barra gris. */
+ function inDragZone(e){
+  if(handle.contains(e.target))return true;
+  const r=sheet.getBoundingClientRect();
+  return e.clientY<=r.top+78;
+ }
+ sheet.addEventListener("pointerdown",e=>{if(!inDragZone(e)||e.target.closest("button,input,textarea,select,a"))return;if(e.pointerType==="mouse"&&e.button!==0)return;begin(e.clientY,e)});
+ sheet.addEventListener("pointermove",e=>move(e.clientY,e));
+ sheet.addEventListener("pointerup",e=>{if(!dragging)return;const did=changed;end(e.clientY);if(!did)sheet.classList.toggle("compact");handle.setAttribute("aria-expanded",String(!sheet.classList.contains("compact")))});
+ sheet.addEventListener("pointercancel",()=>{if(dragging)end(startY)});
  handle.addEventListener("pointerdown",e=>{if(e.pointerType==="mouse"&&e.button!==0)return;begin(e.clientY,e)});
  handle.addEventListener("pointermove",e=>move(e.clientY,e));
  handle.addEventListener("pointerup",e=>{if(!dragging)return;const did=changed;end(e.clientY);if(!did)sheet.classList.toggle("compact");handle.setAttribute("aria-expanded",String(!sheet.classList.contains("compact")))});
