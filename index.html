@@ -42,7 +42,7 @@ const SUPABASE_URL="https://jnqgnjwnqovvguommmjp.supabase.co",SUPABASE_KEY="sb_p
 const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 const $=id=>document.getElementById(id);
 const map=L.map("map",{zoomControl:false,preferCanvas:true}).setView([38.477,-0.791],11);
-L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}{r}.png",{subdomains:"abcd",maxZoom:20,attribution:"© OpenStreetMap contributors © CARTO"}).addTo(map);L.control.zoom({position:"bottomright"}).addTo(map);
+L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}",{maxZoom:16,attribution:"Tiles © Esri"}).addTo(map);L.control.zoom({position:"bottomright"}).addTo(map);
 let user=null,profile=null,mode="passenger",pSignup=false,dSignup=false,coords=null,driverAvailable=false,ownMarker=null,driverMarkers=[],requestMarkers=[],requestId=null;
 const toast=$("toast");
 function say(s,type=""){toast.textContent=s;toast.className="toast "+type;toast.hidden=false;clearTimeout(say.t);say.t=setTimeout(()=>toast.hidden=true,4300)}
