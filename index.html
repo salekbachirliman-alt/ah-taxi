@@ -196,14 +196,22 @@ async function getActiveDriverRide(){
  return null;
 }
 async function finishActiveRide(id,button){
- if(button)button.disabled=true;
- try{
-  const {data:ride,error:readError}=await db.from("ride_requests").select("id,status").eq("id",id).single();if(readError)throw readError;
-  if(TERMINAL_RIDE_STATUSES.includes(String(ride.status||"").toLowerCase())){stopDriverTracking();say("Este viaje ya estaba finalizado.","success");await loadRequests();await loadDriverHistory();return}
-  const {error}=await db.from("ride_requests").update({status:"completed"}).eq("id",id);if(error)throw error;
-  stopDriverTracking();setDriverPanel("requests");say("Viaje finalizado. Ya puedes aceptar otra reserva.","success");await loadRequests();await loadDriverHistory();
- }catch(e){say("No se pudo finalizar el viaje. "+(e.message||"Comprueba los permisos de la base de datos."),"error");if(button)button.disabled=false}
-}
+  if(button){button.disabled=true;button.textContent="Finalizando…"}
+  try{
+   const {data:ride,error:readError}=await db.from("ride_requests").select("id,status").eq("id",id).single();if(readError)throw readError;
+   if(!TERMINAL_RIDE_STATUSES.includes(String(ride.status||"").toLowerCase())){
+    const {data:updated,error}=await db.from("ride_requests").update({status:"completed"}).eq("id",id).select("id,status").maybeSingle();
+    if(error)throw error;
+    if(!updated)throw new Error("La base de datos no confirmó el cambio. Comprueba los permisos RLS de ride_requests para que el conductor pueda actualizar su viaje.");
+   }
+   stopDriverTracking();
+   setDriverPanel("collapsed");
+   await loadRequests();
+   await loadDriverHistory();
+   map.invalidateSize();
+   say("Viaje finalizado. El panel se ha recogido y las nuevas reservas están visibles en el mapa.","success");
+  }catch(e){say("No se pudo finalizar el viaje. "+(e.message||"Comprueba los permisos de la base de datos."),"error");if(button){button.disabled=false;button.textContent="Finalizar viaje"}}
+ }
 async function loadRequests(){
  if(!user||profile?.role!=="driver")return;
  requestMarkers.forEach(m=>map.removeLayer(m));requestMarkers=[];
