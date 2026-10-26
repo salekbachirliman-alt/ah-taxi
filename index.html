@@ -113,7 +113,7 @@ async function updateDriverRoute(c,fit=false){
  if(!activePickup||!Number.isFinite(c?.latitude)||!Number.isFinite(c?.longitude))return;
   const previous=coords;coords=c;const heading=getSmoothedHeading(c,previous);
   // North-up heading: rotate the map opposite to the vehicle bearing so the road ahead stays at the top.
-  if(typeof map.setBearing==="function"&&Number.isFinite(heading))map.setBearing((540-heading+360)%360);
+  if(typeof map.setBearing==="function"&&Number.isFinite(heading)){const isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);const isInstalledIOS=isIOS&&(navigator.standalone===true||window.matchMedia("(display-mode: standalone)").matches);const mapBearing=isInstalledIOS?(360-heading+360)%360:(540-heading+360)%360;map.setBearing(mapBearing)}
   const carIcon=L.divIcon({className:"",html:'<div class="nav-car" style="transform:rotate('+heading+'deg)"><span>▲</span></div>',iconSize:[38,38],iconAnchor:[19,19]});
  if(carMarker){carMarker.setLatLng([c.latitude,c.longitude]);carMarker.setIcon(carIcon)}else carMarker=L.marker([c.latitude,c.longitude],{icon:carIcon,zIndexOffset:1200,interactive:false}).addTo(map);
  if(ownMarker){map.removeLayer(ownMarker);ownMarker=null}
