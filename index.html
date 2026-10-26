@@ -257,6 +257,11 @@ async function finishActiveRide(id,button){
     if(!updated)throw new Error("No se confirmó el cambio en la base de datos. Puede faltar permiso de actualización en Supabase.");
    }
    stopDriverTracking();
+   if(activeRoute){map.removeLayer(activeRoute);activeRoute=null;}
+   if(carMarker){map.removeLayer(carMarker);carMarker=null;}
+   if(ownMarker){map.removeLayer(ownMarker);ownMarker=null;}
+   activePickup=null;routeSteps=[];routeStepIndex=0;lastRouteUpdate=0;lastHeading=null;
+   $("mapNote").textContent="Viaje finalizado · esperando nuevas solicitudes";
    await loadRequests();
    await loadDriverHistory();
    setDriverPanel("collapsed");
