@@ -38,7 +38,36 @@
 <script>window.shTaxiSwitchMode=function(mode){try{var p=mode==="passenger";var pm=document.getElementById("passengerMode"),dm=document.getElementById("driverMode"),pv=document.getElementById("passengerView"),dv=document.getElementById("driverView");if(pm)pm.setAttribute("aria-pressed",String(p));if(dm)dm.setAttribute("aria-pressed",String(!p));if(pv)pv.classList.toggle("active",p);if(dv)dv.classList.toggle("active",!p);var t=document.getElementById("sheetTitle"),c=document.getElementById("sheetCaption");if(t)t.textContent=p?"Muévete a tu manera":"Tu espacio de conductor";if(c)c.textContent=p?"Pide tu viaje en unos pasos.":"Activa tu ubicación y recibe solicitudes.";document.documentElement.setAttribute("data-sh-mode",mode);if(typeof window.shTaxiMainSetMode==="function")window.shTaxiMainSetMode(mode)}catch(e){console.error(e)}};</script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-(()=>{
+(async()=>{
+const loadAhTaxiScript=(urls,ready)=>new Promise((resolve,reject)=>{
+ if(ready())return resolve();
+ let index=0,finished=false,timer=null;
+ const next=()=>{
+  if(ready())return done(true);
+  if(index>=urls.length)return done(false);
+  const script=document.createElement("script");
+  script.src=urls[index++];script.async=true;
+  const cleanup=()=>{script.onload=null;script.onerror=null;if(timer)clearTimeout(timer)};
+  script.onload=()=>{cleanup();if(ready())done(true);else next()};
+  script.onerror=()=>{cleanup();next()};
+  timer=setTimeout(()=>{cleanup();next()},9000);
+  document.head.appendChild(script);
+ };
+ const done=ok=>{if(finished)return;finished=true;if(timer)clearTimeout(timer);ok?resolve():reject(new Error("No se pudo cargar una dependencia de AH Taxi"))};
+ next();
+});
+try{
+ if(!window.L)await loadAhTaxiScript(["https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js","https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"],()=>!!window.L);
+ if(!window.supabase||typeof window.supabase.createClient!=="function")await loadAhTaxiScript(["https://unpkg.com/@supabase/supabase-js@2","https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"],()=>!!window.supabase&&typeof window.supabase.createClient==="function");
+}catch(dependencyError){
+ console.error("AH Taxi: no se pudieron cargar las librerías necesarias",dependencyError);
+ const warning=document.createElement("div");
+ warning.setAttribute("role","alert");
+ warning.style.cssText="position:fixed;z-index:99999;left:16px;right:16px;top:90px;background:#fff;color:#151515;padding:18px;border-radius:14px;box-shadow:0 8px 30px #0004;font:600 15px/1.4 -apple-system,BlinkMacSystemFont,sans-serif";
+ warning.textContent="AH Taxi no ha podido cargar el mapa o la conexión. Comprueba tu conexión a Internet y vuelve a abrir la aplicación.";
+ document.body.appendChild(warning);
+ return;
+}
 const SUPABASE_URL="https://jnqgnjwnqovvguommmjp.supabase.co",SUPABASE_KEY="sb_publishable_uxEe33StrtXaFOhFDXXyxA_tSLHKVpo";
 const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 const $=id=>document.getElementById(id);
