@@ -110,7 +110,6 @@ function getSmoothedHeading(c,previous){let candidate=Number.isFinite(c.heading)
 async function updateDriverRoute(c,fit=false){
  if(!activePickup||!Number.isFinite(c?.latitude)||!Number.isFinite(c?.longitude))return;
   const previous=coords;coords=c;const heading=getSmoothedHeading(c,previous);
- if(heading===null&&previous&&Number.isFinite(previous.latitude)&&Number.isFinite(previous.longitude)){const dLat=(c.latitude-previous.latitude)*Math.PI/180,dLon=(c.longitude-previous.longitude)*Math.PI/180;const y=Math.sin(dLon)*Math.cos(c.latitude*Math.PI/180),x=Math.cos(previous.latitude*Math.PI/180)*Math.sin(c.latitude*Math.PI/180)-Math.sin(previous.latitude*Math.PI/180)*Math.cos(c.latitude*Math.PI/180)*Math.cos(dLon);if(Math.abs(dLat)+Math.abs(dLon)>0.00003)heading=(Math.atan2(y,x)*180/Math.PI+360)%360;else heading=0}else if(heading===null)heading=0;
   const carIcon=L.divIcon({className:"",html:"<div class=\\"nav-car\\" style=\\"transform:rotate("+heading+"deg)\\"><span>▲</span></div>",iconSize:[38,38],iconAnchor:[19,19]});
  if(carMarker){carMarker.setLatLng([c.latitude,c.longitude]);carMarker.setIcon(carIcon)}else carMarker=L.marker([c.latitude,c.longitude],{icon:carIcon,zIndexOffset:1200,interactive:false}).addTo(map);
  if(ownMarker){map.removeLayer(ownMarker);ownMarker=null}
