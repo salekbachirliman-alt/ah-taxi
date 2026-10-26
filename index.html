@@ -72,6 +72,7 @@ const loadAhTaxiScript=(urls,ready)=>new Promise((resolve,reject)=>{
 });
 try{
  if(!window.L)await loadAhTaxiScript(["https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js","https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"],()=>!!window.L);
+ if(window.L&&!window.L.Map.prototype.setBearing)await loadAhTaxiScript(["https://unpkg.com/leaflet-rotate@0.2.8/dist/leaflet-rotate-src.js","https://cdn.jsdelivr.net/npm/leaflet-rotate@0.2.8/dist/leaflet-rotate-src.js"],()=>!!window.L&&typeof window.L.Map.prototype.setBearing==="function");
  if(!window.supabase||typeof window.supabase.createClient!=="function")await loadAhTaxiScript(["https://unpkg.com/@supabase/supabase-js@2","https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"],()=>!!window.supabase&&typeof window.supabase.createClient==="function");
 }catch(dependencyError){
  console.error("AH Taxi: no se pudieron cargar las librerías necesarias",dependencyError);
@@ -85,7 +86,7 @@ try{
 const SUPABASE_URL="https://jnqgnjwnqovvguommmjp.supabase.co",SUPABASE_KEY="sb_publishable_uxEe33StrtXaFOhFDXXyxA_tSLHKVpo";
 const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 const $=id=>document.getElementById(id);
-const map=L.map("map",{zoomControl:false,preferCanvas:true,touchZoom:true,doubleClickZoom:true,scrollWheelZoom:true,dragging:true,zoomSnap:0.5,zoomDelta:0.5}).setView([38.477,-0.791],14);
+const map=L.map("map",{zoomControl:false,preferCanvas:true,touchZoom:true,doubleClickZoom:true,scrollWheelZoom:true,dragging:true,zoomSnap:0.5,zoomDelta:0.5,rotate:true,bearing:0}).setView([38.477,-0.791],14);
 L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:"© OpenStreetMap contributors",updateWhenIdle:true,keepBuffer:4}).addTo(map);L.control.zoom({position:"topright"}).addTo(map);
 let user=null,profile=null,mode="passenger",pSignup=false,dSignup=false,coords=null,pickupCoords=null,driverAvailable=false,ownMarker=null,pickupAddressMarker=null,accuracyCircle=null,locationWatchId=null,carMarker=null,driverMarkers=[],requestMarkers=[],requestId=null,activeRoute=null,trackingWatchId=null,activePickup=null,routeSteps=[],routeStepIndex=0,lastRouteUpdate=0,lastHeading=null;
 const toast=$("toast");
@@ -111,6 +112,8 @@ function getSmoothedHeading(c,previous){let candidate=Number.isFinite(c.heading)
 async function updateDriverRoute(c,fit=false){
  if(!activePickup||!Number.isFinite(c?.latitude)||!Number.isFinite(c?.longitude))return;
   const previous=coords;coords=c;const heading=getSmoothedHeading(c,previous);
+  // North-up heading: rotate the map opposite to the vehicle bearing so the road ahead stays at the top.
+  if(typeof map.setBearing==="function"&&Number.isFinite(heading))map.setBearing((360-heading+360)%360);
   const carIcon=L.divIcon({className:"",html:'<div class="nav-car" style="transform:rotate('+heading+'deg)"><span>▲</span></div>',iconSize:[38,38],iconAnchor:[19,19]});
  if(carMarker){carMarker.setLatLng([c.latitude,c.longitude]);carMarker.setIcon(carIcon)}else carMarker=L.marker([c.latitude,c.longitude],{icon:carIcon,zIndexOffset:1200,interactive:false}).addTo(map);
  if(ownMarker){map.removeLayer(ownMarker);ownMarker=null}
