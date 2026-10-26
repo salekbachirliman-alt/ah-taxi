@@ -86,7 +86,7 @@ const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 const $=id=>document.getElementById(id);
 const map=L.map("map",{zoomControl:false,preferCanvas:true,touchZoom:true,doubleClickZoom:true,scrollWheelZoom:true,dragging:true,zoomSnap:0.5,zoomDelta:0.5}).setView([38.477,-0.791],14);
 L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:"© OpenStreetMap contributors",updateWhenIdle:true,keepBuffer:4}).addTo(map);L.control.zoom({position:"topright"}).addTo(map);
-let user=null,profile=null,mode="passenger",pSignup=false,dSignup=false,coords=null,pickupCoords=null,driverAvailable=false,ownMarker=null,pickupAddressMarker=null,accuracyCircle=null,locationWatchId=null,carMarker=null,driverMarkers=[],requestMarkers=[],requestId=null,activeRoute=null,trackingWatchId=null,activePickup=null,routeSteps=[],routeStepIndex=0,lastRouteUpdate=0;
+let user=null,profile=null,mode="passenger",pSignup=false,dSignup=false,coords=null,pickupCoords=null,driverAvailable=false,ownMarker=null,pickupAddressMarker=null,accuracyCircle=null,locationWatchId=null,carMarker=null,driverMarkers=[],requestMarkers=[],requestId=null,activeRoute=null,trackingWatchId=null,activePickup=null,routeSteps=[],routeStepIndex=0,lastRouteUpdate=0,lastHeading=null;
 const toast=$("toast");
 function say(s,type=""){toast.textContent=s;toast.className="toast "+type;toast.hidden=false;clearTimeout(say.t);say.t=setTimeout(()=>toast.hidden=true,4300)}
 function esc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
@@ -104,15 +104,16 @@ function stopPassiveLocationTracking(){if(locationWatchId!==null&&navigator.geol
 function instructionText(step){const m=step.maneuver||{},type=m.type||"",mod=m.modifier||"";if(type==="arrive")return "Has llegado al punto de recogida";if(type==="depart")return "Continúa por "+(step.name||"la carretera");if(type==="turn")return "Gira "+(mod||"");if(type==="roundabout"||type==="rotary")return "En la rotonda, toma la salida "+(m.exit||"indicada");if(type==="merge")return "Incorpórate "+(mod||"");if(type==="new name"||type==="continue")return "Continúa por "+(step.name||"la carretera");if(type==="fork")return "Mantente "+(mod||"");if(type==="end of road")return "Al final de la vía, gira "+(mod||"");return "Continúa "+(mod||"recto")+(step.name?" por "+step.name:"")}
 function distanceToManeuver(c,step){const loc=step?.maneuver?.location;if(!loc||!Number.isFinite(c?.latitude)||!Number.isFinite(c?.longitude))return Infinity;const rad=v=>v*Math.PI/180,lat1=rad(c.latitude),lat2=rad(loc[1]),dLat=lat2-lat1,dLon=rad(loc[0]-c.longitude),a=Math.sin(dLat/2)**2+Math.cos(lat1)*Math.cos(lat2)*Math.sin(dLon/2)**2;return 6371000*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a))}
 function showNextInstruction(c=coords){if(!activePickup)return;if(routeSteps.length){let idx=routeSteps.findIndex((s,i)=>i>=routeStepIndex&&distanceToManeuver(c,s)>25);if(idx<0)idx=routeSteps.length-1;routeStepIndex=idx;const step=routeSteps[idx],remaining=distanceToManeuver(c,step);$("mapNote").textContent=instructionText(step)+(Number.isFinite(remaining)&&remaining>25?" · en "+(remaining>=1000?(remaining/1000).toFixed(1)+" km":Math.round(remaining)+" m"):"")}else $("mapNote").textContent="Siguiendo GPS hacia el cliente"}
+function angleDifference(from,to){return ((to-from+540)%360)-180}
+function bearingBetween(a,b){const rad=v=>v*Math.PI/180,lat1=rad(a.latitude),lat2=rad(b.latitude),dLon=rad(b.longitude-a.longitude);const y=Math.sin(dLon)*Math.cos(lat2),x=Math.cos(lat1)*Math.sin(lat2)-Math.sin(lat1)*Math.cos(lat2)*Math.cos(dLon);return (Math.atan2(y,x)*180/Math.PI+360)%360}
+function getSmoothedHeading(c,previous){let candidate=Number.isFinite(c.heading)&&c.heading>=0&&c.heading<360?c.heading:null;const speed=Number.isFinite(c.speed)?c.speed:0,accuracy=Number.isFinite(c.accuracy)?c.accuracy:999;if((candidate===null||speed<1.2)&&previous&&Number.isFinite(previous.latitude)&&Number.isFinite(previous.longitude)&&accuracy<55){const distance=map.distance([previous.latitude,previous.longitude],[c.latitude,c.longitude]);if(distance>=4)candidate=bearingBetween(previous,c)}if(candidate===null)return lastHeading===null?0:lastHeading;if(lastHeading===null){lastHeading=candidate;return candidate}const delta=angleDifference(lastHeading,candidate);if(Math.abs(delta)>100&&speed<2)return lastHeading;lastHeading=(lastHeading+delta*0.32+360)%360;return lastHeading}
 async function updateDriverRoute(c,fit=false){
  if(!activePickup||!Number.isFinite(c?.latitude)||!Number.isFinite(c?.longitude))return;
- const previous=coords;coords=c;
- let heading=Number.isFinite(c.heading)&&c.heading>=0?c.heading:null;
- if(heading===null&&previous&&Number.isFinite(previous.latitude)&&Number.isFinite(previous.longitude)){const dLat=(c.latitude-previous.latitude)*Math.PI/180,dLon=(c.longitude-previous.longitude)*Math.PI/180;const y=Math.sin(dLon)*Math.cos(c.latitude*Math.PI/180),x=Math.cos(previous.latitude*Math.PI/180)*Math.sin(c.latitude*Math.PI/180)-Math.sin(previous.latitude*Math.PI/180)*Math.cos(c.latitude*Math.PI/180)*Math.cos(dLon);if(Math.abs(dLat)+Math.abs(dLon)>0.00003)heading=(Math.atan2(y,x)*180/Math.PI+360)%360;else heading=0}else if(heading===null)heading=0;
- const carIcon=L.divIcon({className:"",html:"<div class=\"nav-car\" style=\"transform:rotate("+heading+"deg)\">▲</div>",iconSize:[38,38],iconAnchor:[19,19]});
+  const previous=coords;coords=c;const heading=getSmoothedHeading(c,previous);
+  const carIcon=L.divIcon({className:"",html:"<div class=\\"nav-car\\" style=\\"transform:rotate("+heading+"deg)\\"><span>▲</span></div>",iconSize:[38,38],iconAnchor:[19,19]});
  if(carMarker){carMarker.setLatLng([c.latitude,c.longitude]);carMarker.setIcon(carIcon)}else carMarker=L.marker([c.latitude,c.longitude],{icon:carIcon,zIndexOffset:1200,interactive:false}).addTo(map);
  if(ownMarker){map.removeLayer(ownMarker);ownMarker=null}
- if(!fit)map.panTo([c.latitude,c.longitude],{animate:false});
+  if(!fit){map.panTo([c.latitude,c.longitude],{animate:true,duration:0.35});}else map.setView([c.latitude,c.longitude],Math.max(map.getZoom(),17),{animate:true,duration:0.4});
  if(driverAvailable)db.from("driver_presence").update({latitude:c.latitude,longitude:c.longitude,last_seen_at:new Date().toISOString(),updated_at:new Date().toISOString()}).eq("driver_id",user.id).then(()=>{});
  const now=Date.now();if(!fit&&now-lastRouteUpdate<12000){if(activeRoute)showNextInstruction(c);return}
  lastRouteUpdate=now;
@@ -142,7 +143,7 @@ async function startDriverNavigation(){
   const start=await getPosition();coords=start;
   stopPassiveLocationTracking();
   if(trackingWatchId!==null&&navigator.geolocation)navigator.geolocation.clearWatch(trackingWatchId);
-  trackingWatchId=null;lastRouteUpdate=0;
+trackingWatchId=null;lastRouteUpdate=0;lastHeading=null;
   await updateDriverRoute(start,true);
   if(navigator.geolocation){trackingWatchId=navigator.geolocation.watchPosition(p=>{const c={latitude:p.coords.latitude,longitude:p.coords.longitude,accuracy:p.coords.accuracy,heading:p.coords.heading,speed:p.coords.speed};updateDriverRoute(c,false)},e=>say("Se perdió la señal GPS. Comprueba los permisos de ubicación.","error"),{enableHighAccuracy:true,maximumAge:1500,timeout:20000})}
   $("mapNote").textContent="Navegación activa · sigue las indicaciones";
@@ -158,7 +159,7 @@ async function startDriverNavigation(){
   say("NAVEGACIÓN ACTIVA · PANEL RECOGIDO","success");
  }catch(e){say("Permite la ubicación GPS precisa para iniciar la ruta.","error")}
 }
-function stopDriverTracking(){if(trackingWatchId!==null&&navigator.geolocation)navigator.geolocation.clearWatch(trackingWatchId);trackingWatchId=null;activePickup=null;routeSteps=[];routeStepIndex=0;if(activeRoute){map.removeLayer(activeRoute);activeRoute=null}if(carMarker){map.removeLayer(carMarker);carMarker=null}startPassiveLocationTracking()}
+function stopDriverTracking(){lastHeading=null;
 function expandDriverPanel(){const sheet=document.querySelector(".sheet");sheet.classList.remove("compact");sheet.style.transition="none";sheet.style.height=Math.min(window.innerHeight*.82,window.innerHeight-24)+"px";sheet.style.maxHeight=Math.min(window.innerHeight*.88,window.innerHeight-24)+"px";sheet.style.overflowY="auto";$("sheetHandle").setAttribute("aria-expanded","true");requestAnimationFrame(()=>{sheet.style.transition="height .25s ease,max-height .25s ease";setTimeout(()=>{sheet.style.height="";sheet.style.maxHeight="";sheet.style.overflowY="auto";map.invalidateSize()},400)})}
 $("locateMe").onclick=async()=>{try{const c=await getPosition();placeOwnMarker(c,true);startPassiveLocationTracking();say("Ubicación GPS actualizada con precisión de aproximadamente "+Math.round(c.accuracy||0)+" metros.","success")}catch(e){say("No se pudo obtener una ubicación precisa. Permite la ubicación exacta en los ajustes del navegador y del teléfono.","error")}};
 $("useLocation").onclick=async()=>{try{const c=await getPosition();placeOwnMarker(c);pickupCoords={latitude:c.latitude,longitude:c.longitude};$("pickup").value="Mi ubicación actual";$("pickupAddressHint").textContent="Recogida fijada en tu ubicación GPS.";if(pickupAddressMarker){map.removeLayer(pickupAddressMarker);pickupAddressMarker=null}say("Punto de recogida actualizado.","success")}catch(e){say("No se pudo obtener tu ubicación. Puedes escribir la dirección y buscarla en el mapa.","error")}};
