@@ -108,7 +108,7 @@ function distanceToManeuver(c,step){const loc=step?.maneuver?.location;if(!loc||
 function showNextInstruction(c=coords){if(!activePickup)return;if(routeSteps.length){let idx=routeSteps.findIndex((s,i)=>i>=routeStepIndex&&distanceToManeuver(c,s)>25);if(idx<0)idx=routeSteps.length-1;routeStepIndex=idx;const step=routeSteps[idx],remaining=distanceToManeuver(c,step);$("mapNote").textContent=instructionText(step)+(Number.isFinite(remaining)&&remaining>25?" · en "+(remaining>=1000?(remaining/1000).toFixed(1)+" km":Math.round(remaining)+" m"):"")}else $("mapNote").textContent="Siguiendo GPS hacia el cliente"}
 function angleDifference(from,to){return ((to-from+540)%360)-180}
 function bearingBetween(a,b){const rad=v=>v*Math.PI/180,lat1=rad(a.latitude),lat2=rad(b.latitude),dLon=rad(b.longitude-a.longitude);const y=Math.sin(dLon)*Math.cos(lat2),x=Math.cos(lat1)*Math.sin(lat2)-Math.sin(lat1)*Math.cos(lat2)*Math.cos(dLon);return (Math.atan2(y,x)*180/Math.PI+360)%360}
-function getSmoothedHeading(c,previous){let candidate=Number.isFinite(c.heading)&&c.heading>=0&&c.heading<360?c.heading:null;const speed=Number.isFinite(c.speed)?c.speed:0,accuracy=Number.isFinite(c.accuracy)?c.accuracy:999;if((candidate===null||speed<1.2)&&previous&&Number.isFinite(previous.latitude)&&Number.isFinite(previous.longitude)&&accuracy<55){const distance=map.distance([previous.latitude,previous.longitude],[c.latitude,c.longitude]);if(distance>=4)candidate=bearingBetween(previous,c)}if(candidate===null)return lastHeading===null?0:lastHeading;if(lastHeading===null){lastHeading=candidate;return candidate}const delta=angleDifference(lastHeading,candidate);if(Math.abs(delta)>100&&speed<2)return lastHeading;lastHeading=(lastHeading+delta*0.32+360)%360;return lastHeading}
+function getSmoothedHeading(c,previous){let candidate=Number.isFinite(c.heading)&&c.heading>=0&&c.heading<360?c.heading:null;const speed=Number.isFinite(c.speed)?c.speed:0,accuracy=Number.isFinite(c.accuracy)?c.accuracy:999;if((candidate===null||speed<1.2)&&previous&&Number.isFinite(previous.latitude)&&Number.isFinite(previous.longitude)&&accuracy<55){const distance=map.distance([previous.latitude,previous.longitude],[c.latitude,c.longitude]);if(distance>=4)candidate=bearingBetween(previous,c)}if(candidate===null)return lastHeading===null?0:lastHeading;if(lastHeading===null){lastHeading=candidate;return candidate}const delta=angleDifference(lastHeading,candidate);if(Math.abs(delta)>100&&speed<2)return lastHeading;const responsiveness=speed>=3?0.58:0.38;lastHeading=(lastHeading+delta*responsiveness+360)%360;return lastHeading}
 async function updateDriverRoute(c,fit=false){
  if(!activePickup||!Number.isFinite(c?.latitude)||!Number.isFinite(c?.longitude))return;
   const previous=coords;coords=c;const heading=getSmoothedHeading(c,previous);
@@ -117,7 +117,7 @@ async function updateDriverRoute(c,fit=false){
   const carIcon=L.divIcon({className:"",html:'<div class="nav-car" style="transform:rotate('+heading+'deg)"><span>▲</span></div>',iconSize:[38,38],iconAnchor:[19,19]});
  if(carMarker){carMarker.setLatLng([c.latitude,c.longitude]);carMarker.setIcon(carIcon)}else carMarker=L.marker([c.latitude,c.longitude],{icon:carIcon,zIndexOffset:1200,interactive:false}).addTo(map);
  if(ownMarker){map.removeLayer(ownMarker);ownMarker=null}
-  if(!fit){map.panTo([c.latitude,c.longitude],{animate:true,duration:0.35});}else map.setView([c.latitude,c.longitude],Math.max(map.getZoom(),17),{animate:true,duration:0.4});
+  if(!fit){map.panTo([c.latitude,c.longitude],{animate:true,duration:0.18});}else map.setView([c.latitude,c.longitude],Math.max(map.getZoom(),17),{animate:true,duration:0.25});
  if(driverAvailable)db.from("driver_presence").update({latitude:c.latitude,longitude:c.longitude,last_seen_at:new Date().toISOString(),updated_at:new Date().toISOString()}).eq("driver_id",user.id).then(()=>{});
  const now=Date.now();if(!fit&&now-lastRouteUpdate<12000){if(activeRoute)showNextInstruction(c);return}
  lastRouteUpdate=now;
@@ -149,7 +149,7 @@ async function startDriverNavigation(){
   if(trackingWatchId!==null&&navigator.geolocation)navigator.geolocation.clearWatch(trackingWatchId);
 trackingWatchId=null;lastRouteUpdate=0;lastHeading=null;
   await updateDriverRoute(start,true);
-  if(navigator.geolocation){trackingWatchId=navigator.geolocation.watchPosition(p=>{const c={latitude:p.coords.latitude,longitude:p.coords.longitude,accuracy:p.coords.accuracy,heading:p.coords.heading,speed:p.coords.speed};updateDriverRoute(c,false)},e=>say("Se perdió la señal GPS. Comprueba los permisos de ubicación.","error"),{enableHighAccuracy:true,maximumAge:1500,timeout:20000})}
+  if(navigator.geolocation){trackingWatchId=navigator.geolocation.watchPosition(p=>{const c={latitude:p.coords.latitude,longitude:p.coords.longitude,accuracy:p.coords.accuracy,heading:p.coords.heading,speed:p.coords.speed};updateDriverRoute(c,false)},e=>say("Se perdió la señal GPS. Comprueba los permisos de ubicación.","error"),{enableHighAccuracy:true,maximumAge:0,timeout:12000})}
   $("mapNote").textContent="Navegación activa · sigue las indicaciones";
   // Forzar el panel compacto en móvil; quitar estilos inline que pudieran mantenerlo abierto.
   const sheet=document.querySelector(".sheet");
