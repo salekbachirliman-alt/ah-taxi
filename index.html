@@ -153,6 +153,12 @@ async function startDriverNavigation(){
 trackingWatchId=null;lastRouteUpdate=0;lastHeading=null;
   await updateDriverRoute(start,true);
   if(navigator.geolocation){trackingWatchId=navigator.geolocation.watchPosition(p=>{const c={latitude:p.coords.latitude,longitude:p.coords.longitude,accuracy:p.coords.accuracy,heading:p.coords.heading,speed:p.coords.speed};updateDriverRoute(c,false)},e=>say("Se perdió la señal GPS. Comprueba los permisos de ubicación.","error"),{enableHighAccuracy:true,maximumAge:0,timeout:12000})}
+  // Abrir navegación externa de Google Maps al punto GPS de recogida.
+  // La URL universal abre la app de Google Maps si está instalada y, si no, su versión web.
+  const googleMapsUrl="https://www.google.com/maps/dir/?api=1&destination="+encodeURIComponent(activePickup.latitude+","+activePickup.longitude)+"&travelmode=driving";
+  $("mapNote").textContent="Abriendo Google Maps…";
+  window.location.href=googleMapsUrl;
+  return;
   $("mapNote").textContent="Navegación activa · sigue las indicaciones";
   // Forzar el panel compacto en móvil; quitar estilos inline que pudieran mantenerlo abierto.
   const sheet=document.querySelector(".sheet");
