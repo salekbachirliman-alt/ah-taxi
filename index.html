@@ -146,7 +146,17 @@ async function showRouteToPickup(r){
 async function startDriverNavigation(){
  if(!activePickup){say("Primero acepta una reserva con ubicación GPS.","error");return}
  try{
-  const start=await getPosition();coords=start;
+  const start=await getPosition();
+  const active=await getActiveDriverRide();
+  if(!active)throw new Error("No hay una reserva activa para iniciar.");
+  const currentStatus=String(active.ride.status||"").toLowerCase();
+  if(!["in_progress","in progress","en curso"].includes(currentStatus)){
+   const {data:updated,error:statusError}=await db.from("ride_requests").update({status:"in_progress"}).eq("id",active.ride.id).select("id,status").maybeSingle();
+   if(statusError)throw new Error("No se pudo guardar el estado «En curso» en Supabase: "+statusError.message);
+   if(!updated){const {data:verify,error:verifyError}=await db.from("ride_requests").select("id,status").eq("id",active.ride.id).single();if(verifyError)throw verifyError;if(!["in_progress","in progress","en curso"].includes(String(verify.status||"").toLowerCase()))throw new Error("Supabase no confirmó que el viaje esté en curso.");}
+  }
+  await loadRequests();
+  coords=start;
   navigationFollowing=true;
   stopPassiveLocationTracking();
   if(trackingWatchId!==null&&navigator.geolocation)navigator.geolocation.clearWatch(trackingWatchId);
@@ -163,12 +173,12 @@ trackingWatchId=null;lastRouteUpdate=0;lastHeading=null;
   
   
   requestAnimationFrame(()=>{sheet.classList.add("compact");map.invalidateSize()});
-  say("NAVEGACIÓN ACTIVA · PANEL RECOGIDO","success");
+  say("Viaje marcado como EN CURSO · navegación activa","success");
   // URL universal: abre Google Maps si está instalado y la web si no lo está.
   const googleMapsUrl="https://www.google.com/maps/dir/?api=1&destination="+encodeURIComponent(activePickup.latitude+","+activePickup.longitude)+"&travelmode=driving";
   $("mapNote").textContent="Abriendo Google Maps…";
   window.location.href=googleMapsUrl;
- }catch(e){say("Permite la ubicación GPS precisa para iniciar la ruta.","error")}
+ }catch(e){say(e.message||"No se pudo iniciar la ruta. Comprueba el GPS y la conexión.","error")}
 }
 function stopDriverTracking(){navigationFollowing=false;lastHeading=null;if(trackingWatchId!==null&&navigator.geolocation)navigator.geolocation.clearWatch(trackingWatchId);trackingWatchId=null;}
 function expandDriverPanel(){const sheet=document.querySelector(".sheet");sheet.classList.remove("compact");sheet.style.transition="none";sheet.style.height=Math.min(window.innerHeight*.82,window.innerHeight-24)+"px";sheet.style.maxHeight=Math.min(window.innerHeight*.88,window.innerHeight-24)+"px";sheet.style.overflowY="auto";$("sheetHandle").setAttribute("aria-expanded","true");requestAnimationFrame(()=>{sheet.style.transition="height .25s ease,max-height .25s ease";setTimeout(()=>{sheet.style.height="";sheet.style.maxHeight="";sheet.style.overflowY="auto";map.invalidateSize()},400)})}
@@ -276,7 +286,7 @@ async function finishActiveRide(id,button){
    document.querySelector(".sheet").style.maxHeight="";
    map.invalidateSize();
    say("Viaje finalizado. El panel se ha recogido y las reservas pendientes están actualizadas.","success");
-  }catch(e){say("No se pudo finalizar el viaje. "+(e.message||"Comprueba los permisos de Supabase."),"error");if(button){button.disabled=false;button.textContent="Finalizar viaje"}}
+  }catch(e){say("No se pudo finalizar el viaje. "+(e.message||"Comprueba los permisos de Supabase."),"error");if(button){button.disabled=false;button.textContent="Finalizar ruta"}}
  }
  async function loadRequests(){
  if(!user||profile?.role!=="driver")return;
@@ -289,9 +299,10 @@ async function finishActiveRide(id,button){
    try{const {data,error}=await db.from("passenger_contacts").select("passenger_name,passenger_phone").eq("request_id",active.assignment.request_id).maybeSingle();if(error)console.warn("No se pudo consultar el contacto del pasajero",error);else passenger=data||{}}catch(e){console.warn("Contacto del pasajero no disponible",e)}
    const phone=String(passenger.passenger_phone||"").replace(/[^0-9+]/g,"");
    const call=phone?'<a href="tel:'+encodeURIComponent(phone)+'" style="display:inline-block;margin:8px 0;padding:10px 14px;border-radius:10px;background:#f2c300;color:#fff;font-weight:800;text-decoration:none">☎ Llamar al cliente</a>':'<p class="hint">El teléfono del cliente no está disponible.</p>';
-   box.innerHTML='<div class="card" style="border:2px solid var(--green)"><strong>Viaje en curso</strong><p>'+esc(r.pickup_label||"Punto de recogida")+' → '+esc(r.destination_label||"Destino")+'</p>'+(passenger.passenger_name?'<p>Cliente: '+esc(passenger.passenger_name)+'</p>':'')+call+'<div class="nav-card"><strong>🧭 Navegación al cliente</strong><p class="hint">Inicia la ruta para ver el recorrido por carretera, las indicaciones y el seguimiento GPS del coche.</p><button class="nav-primary" data-start-route>Iniciar ruta</button><button class="nav-secondary" data-recenter-route>Recentrar mapa</button></div><p class="hint">Finaliza este viaje antes de aceptar otra reserva.</p><button class="green" style="width:100%" data-finish="'+r.id+'">Finalizar viaje</button></div>';
-   box.querySelector("[data-finish]").onclick=e=>finishActiveRide(r.id,e.currentTarget);
-   box.querySelector("[data-start-route]").onclick=()=>startDriverNavigation();
+   const inProgress=["in_progress","in progress","en curso"].includes(String(r.status||"").toLowerCase());
+   box.innerHTML='<div class="card" style="border:2px solid var(--green)"><strong>'+(inProgress?"Viaje en curso":"Reserva aceptada")+'</strong><p>'+esc(r.pickup_label||"Punto de recogida")+' → '+esc(r.destination_label||"Destino")+'</p>'+(passenger.passenger_name?'<p>Cliente: '+esc(passenger.passenger_name)+'</p>':'')+call+(inProgress?'<div class="nav-card"><strong>🚕 Viaje en curso</strong><p class="hint">El estado se ha guardado en Supabase.</p><button class="nav-secondary" data-recenter-route>Ver ruta en AH Taxi</button></div><p class="hint">Al terminar el trayecto, pulsa Finalizar ruta.</p><button class="green" style="width:100%" data-finish="'+r.id+'">Finalizar ruta</button>':'<div class="nav-card"><strong>🧭 Navegación al cliente</strong><p class="hint">Inicia la ruta para guardar el estado y abrir Google Maps.</p><button class="nav-primary" data-start-route>Iniciar ruta</button><button class="nav-secondary" data-recenter-route>Recentrar mapa</button></div><p class="hint">El viaje pasará a en curso al iniciar la navegación.</p>')+'</div>';
+   const finishButton=box.querySelector("[data-finish]");if(finishButton)finishButton.onclick=e=>finishActiveRide(r.id,e.currentTarget);
+   const startButton=box.querySelector("[data-start-route]");if(startButton)startButton.onclick=()=>startDriverNavigation();
    box.querySelector("[data-recenter-route]").onclick=()=>{if(activePickup)map.setView([activePickup.latitude,activePickup.longitude],16,{animate:true});else if(coords)map.setView([coords.latitude,coords.longitude],16,{animate:true})};
    const lat=Number(r.pickup_latitude),lng=Number(r.pickup_longitude);
    if(Number.isFinite(lat)&&Number.isFinite(lng)){
