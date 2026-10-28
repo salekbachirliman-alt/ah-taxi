@@ -1,4 +1,4 @@
-const CACHE="sh-taxi-shell-v71";
+const CACHE="sh-taxi-shell-v72";
 const CORE=["./","./index.html","./manifest.json","./icons/sh-taxi.svg"];
 self.addEventListener("install",event=>{
   event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(CORE)).then(()=>self.skipWaiting()));
